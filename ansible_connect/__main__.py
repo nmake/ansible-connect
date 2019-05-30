@@ -11,7 +11,7 @@ import traceback
 from argparse import ArgumentParser
 from getpass import getpass
 
-from six import iteritems
+from six import itervalues
 from six.moves import input
 
 from ansible.playbook.play_context import PlayContext
@@ -83,7 +83,7 @@ def run():
         for command in args.command:
             output[command] = conn.cliconf.get(command)
 
-        for _key, value in iteritems(output):
+        for value in itervalues(output):
             if not args.json:
                 print('{}\n'.format(value))
             else:
@@ -92,7 +92,7 @@ def run():
         conn.close()
         retcode = 0
 
-    except Exception as _exc:  # pylint: disable=W0703
+    except Exception:  # pylint: disable=W0703
         traceback.print_exc()
 
     finally:
