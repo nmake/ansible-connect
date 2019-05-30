@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #
 # Copyright: (c) 2019, Peter Sprygada (psprygad@redhat.com)
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+
+# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 #
 import sys
 import json
@@ -10,7 +11,7 @@ import traceback
 from argparse import ArgumentParser
 from getpass import getpass
 
-from six import iteritems
+from six import itervalues
 from six.moves import input
 
 from ansible.playbook.play_context import PlayContext
@@ -33,14 +34,15 @@ def get_connection(args):
     play_context.remote_user = args.username or input('Username: ')
     play_context.password = args.password or getpass('Password: ')
 
-
     conn = connection_loader.get('network_cli', play_context, '/dev/null')
-    conn._connect()
+    conn._connect()  # pylint: disable=W0212
 
     return conn
 
 
 def run():
+    """ Entrypoint for console script
+    """
     parser = ArgumentParser()
 
     parser.add_argument('command', nargs='*',
@@ -59,18 +61,19 @@ def run():
                         help='The password used to authenticate with')
 
     parser.add_argument('-t', '--timeout', default=30,
-                        help='The timeout value for the connection (default=30)')
+                        help='The timeout value for the connection \
+                             (default=30)')
 
     parser.add_argument('-n', '--network-os', default='linux',
                         help='The network-os plugin to load')
 
     parser.add_argument('--json', action='store_true',
-                       help='Return the output as a JSON')
+                        help='Return the output as a JSON')
 
     args = parser.parse_args()
 
     conn = None
-    rc = 255
+    retcode = 255
 
     try:
         conn = get_connection(args)
@@ -80,18 +83,17 @@ def run():
         for command in args.command:
             output[command] = conn.cliconf.get(command)
 
-        for key, value in iteritems(output):
+        for value in itervalues(output):
             if not args.json:
                 print('{}\n'.format(value))
             else:
                 print(json.dumps(output, indent=4))
 
         conn.close()
-        rc = 0
+        retcode = 0
 
-    except Exception as exc:
+    except Exception:  # pylint: disable=W0703
         traceback.print_exc()
 
     finally:
-        sys.exit(rc)
-
+        sys.exit(retcode)
